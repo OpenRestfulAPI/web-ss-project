@@ -1,0 +1,21 @@
+{
+    "name": "WebSS project",
+    "keywords": [
+        "Web Screenshot",
+        "OpenSource",
+        "Heroku Friendly"
+    ],
+    "stack": "container",
+    "env": {
+        "host": {
+            "description": "leave as it is on heroku",
+            "value": "0.0.0.0",
+            "required": true
+        },
+        "PORT": {
+            "description": "leave as it is on heroku",
+            "required": true,
+            "value": 8869
+        }
+    }
+}
