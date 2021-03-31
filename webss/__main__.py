@@ -1,15 +1,11 @@
-import sys, re
+import re
+import sys
 import pyppeteer
-from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from temp import tempfile
 import uvicorn
-from loguru import logger
-from configparser import ConfigParser
-from os import environ
 
-config = ConfigParser()
-config.read('config.ini')
+from .import app, host, port
 
 browser = None
 is_browser_started = False
@@ -21,27 +17,6 @@ async def start_browser():
             args=['--no-sandbox', '--disable-setuid-sandbox']
             )
     is_browser_started = True
-
-
-def get_var(name, default=None):
-    ENV = bool(environ.get('ENV', False))
-    if ENV:
-        return environ.get(name, default)
-
-    try:
-        return config.get('web', name)
-    except AttributeError:
-        return None
-
-
-host = get_var('host', 'localhost')
-port = int(get_var('port', 8869))
-
-
-logger.add(sys.stdout, colorize=True, format="<green>{time:HH:mm:ss}</green> | {level} | <level>{message}</level>")
-
-
-app = FastAPI()
 
 
 @app.get("/")
@@ -64,17 +39,23 @@ async def endpoint(site: str):
     if re.match(r'^https?://', site):
         url = site
     else:
-        url = 'http://'+site
+        url = 'http://' + site
     page = await browser.newPage()
     file = tempfile() + ".png"
     try:
         await page.goto(url)
         await page.setViewport({'width': 1280, 'height': 720})
-    except pyppeteer.errors.NetworkError as e:
+    except (
+        pyppeteer.errors.NetworkError,
+        pyppeteer.errors.PageError
+    ) as e:
         return {"error": str(e)}
     await page.screenshot({'path': file})
     return FileResponse(file)
 
 
 if __name__ == "__main__":
-    uvicorn.run(app=app, host=host, port=port)
+    try:
+        uvicorn.run(app=app, host=host, port=port)
+    except (KeyboardInterrupt, RuntimeError, RuntimeWarning):
+        sys.exit(0)
