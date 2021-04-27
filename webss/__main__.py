@@ -1,21 +1,22 @@
+import pyppeteer
 import re
 import sys
-import pyppeteer
+import uvicorn
 from fastapi.responses import FileResponse
 from temp import tempfile
-import uvicorn
 
-from .import app, host, port
+from . import app, host, port
 
 browser = None
 is_browser_started = False
 
+
 async def start_browser():
     global browser, is_browser_started
     browser = await pyppeteer.launch(
-            headless=True,
-            args=['--no-sandbox', '--disable-setuid-sandbox']
-            )
+        headless=True,
+        args=['--no-sandbox', '--disable-setuid-sandbox']
+    )
     is_browser_started = True
 
 
@@ -46,8 +47,8 @@ async def endpoint(site: str):
         await page.goto(url)
         await page.setViewport({'width': 1280, 'height': 720})
     except (
-        pyppeteer.errors.NetworkError,
-        pyppeteer.errors.PageError
+            pyppeteer.errors.NetworkError,
+            pyppeteer.errors.PageError
     ) as e:
         return {"error": str(e)}
     await page.screenshot({'path': file})

@@ -1,9 +1,8 @@
 import sys
+from configparser import ConfigParser
 from fastapi import FastAPI
 from loguru import logger
-from configparser import ConfigParser
 from os import environ
-
 
 logger.add(
     sys.stdout,
@@ -28,6 +27,5 @@ def get_var(name, default=None):
 
 host = get_var('host', 'localhost')
 port = int(get_var('port', 8869))
-
 
 app = FastAPI()
