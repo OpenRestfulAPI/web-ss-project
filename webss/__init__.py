@@ -1,8 +1,9 @@
 import sys
-from configparser import ConfigParser
+from configparser import ConfigParser, NoOptionError
+from os import environ
+
 from fastapi import FastAPI
 from loguru import logger
-from os import environ
 
 logger.add(
     sys.stdout,
@@ -11,21 +12,24 @@ logger.add(
 )
 
 config = ConfigParser()
-config.read('config.ini')
+config.read("config.ini")
 
 
-def get_var(name, default=None):
-    ENV = bool(environ.get('ENV', False))
+def get_var(section, name, default=None):
+    ENV = bool(environ.get("ENV", ""))
     if ENV:
         return environ.get(name, default)
-
     try:
-        return config.get('web', name)
-    except AttributeError:
-        return None
+        get = config.get(section, name)
+        if get:
+            return get
+        return default
+    except (AttributeError, NoOptionError):
+        return default
 
 
-host = get_var('host', 'localhost')
-port = int(get_var('port', 8869))
+host = get_var("web", "host", "localhost")
+port = int(get_var("web", "port", "8869"))
+executable_path = get_var("puppeteer", "executablePath", None)
 
 app = FastAPI()

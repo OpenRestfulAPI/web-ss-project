@@ -1,57 +1,59 @@
-import pyppeteer
 import re
 import sys
+from io import BytesIO
+from typing import Union
+
+import pyppeteer
 import uvicorn
-from fastapi.responses import FileResponse
-from temp import tempfile
+from fastapi.responses import StreamingResponse
+from pyppeteer.browser import Browser
+from pyppeteer.errors import NetworkError, PageError
 
-from . import app, host, port
+from . import app, host, port, executable_path
 
-browser = None
-is_browser_started = False
+browser: Union[Browser, None] = None
+browser_is_started = False
 
 
 async def start_browser():
-    global browser, is_browser_started
-    browser = await pyppeteer.launch(
-        headless=True,
-        args=['--no-sandbox', '--disable-setuid-sandbox']
-    )
-    is_browser_started = True
+    global browser, browser_is_started
+    options = {"headless": True, "args": ["--nosandbox", "--disable-setuid-sandbox"]}
+    if executable_path:
+        options["executablePath"] = executable_path
+    browser = await pyppeteer.launch(**options)
+    browser_is_started = True
 
 
 @app.get("/")
-async def endpoint(site: str):
-    """__[Web-SS Endpoint]__
+async def endpoint(url: str, width: int = 1280, height: int = 720):
+    print(width)
+    """
+    __[Web-SS Endpoint]__
     __Args:__
-        `site (str)`: `[website url]`
+        `url (str)`: `[website url]`
+        optional `width (int)`: `[viewport width]` (default: 1280)
+        optional `height (int)`: `[viewport height]` (default: 720)
     __Returns:__
-        `[type]`: `[FileResponse]` = image: mime_type: image/png
-    
-    __Exception:__
+        `[type]`: `[StreamingResponse]` = image: mime_type: image/jpeg
+    __Exceptions:__
         `[error]`: `[pyppeteer.errors]`
     """
-    global browser, is_browser_started
-    if not is_browser_started:
-        print("started")
+    global browser, browser_is_started
+    if not browser_is_started:
         await start_browser()
-        is_browser_started = True
-    if re.match(r'^https?://', site):
-        url = site
+    if re.match(r"^https?://", url):
+        _url = url
     else:
-        url = 'http://' + site
+        _url = "http://" + url
     page = await browser.newPage()
-    file = tempfile() + ".png"
     try:
-        await page.goto(url)
-        await page.setViewport({'width': 1280, 'height': 720})
-    except (
-            pyppeteer.errors.NetworkError,
-            pyppeteer.errors.PageError
-    ) as e:
+        await page.goto(_url)
+        await page.setViewport({"width": width, "height": height})
+    except (NetworkError, PageError) as e:
         return {"error": str(e)}
-    await page.screenshot({'path': file})
-    return FileResponse(file)
+    screenshot = await page.screenshot({"type": "jpeg"})
+    await page.close()
+    return StreamingResponse(BytesIO(screenshot), media_type="image/jpeg")
 
 
 if __name__ == "__main__":
