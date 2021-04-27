@@ -36,7 +36,6 @@ async def endpoint(site: str):
         print("started")
         await start_browser()
         is_browser_started = True
-    page = await browser.newPage()
     if re.match(r'^https?://', site):
         url = site
     else:
