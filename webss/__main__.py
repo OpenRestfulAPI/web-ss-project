@@ -26,7 +26,6 @@ async def start_browser():
 
 @app.get("/")
 async def endpoint(url: str, width: int = 1280, height: int = 720):
-    print(width)
     """
     __[Web-SS Endpoint]__
     __Args:__
