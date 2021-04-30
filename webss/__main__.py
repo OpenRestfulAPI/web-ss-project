@@ -17,7 +17,7 @@ browser_is_started = False
 
 async def start_browser():
     global browser, browser_is_started
-    options = {"headless": True, "args": ["--nosandbox", "--disable-setuid-sandbox"]}
+    options = {"headless": True, "args": ["--no-sandbox", "--disable-setuid-sandbox"]}
     if executable_path:
         options["executablePath"] = executable_path
     browser = await pyppeteer.launch(**options)
